@@ -1,13 +1,3 @@
-/**
- * [
- *    {
- *      id: <int>
- *      task: <string>
- *      timestamp: <string>
- *      isCompleted: <boolean>
- *    }
- * ]
- */
 const todos = [];
 const RENDER_EVENT = 'render-todo';
 const SAVED_EVENT = 'saved-todo';
@@ -23,7 +13,7 @@ function generateTodoObject(id, task, timestamp, isCompleted) {
     task,
     timestamp,
     isCompleted
-  }
+  };
 }
 
 function findTodo(todoId) {
@@ -45,8 +35,7 @@ function findTodoIndex(todoId) {
 }
 
 function makeTodo(todoObject) {
-
-  const {id, task, timestamp, isCompleted} = todoObject;
+  const { id, task, timestamp, isCompleted } = todoObject;
 
   const textTitle = document.createElement('h2');
   textTitle.innerText = task;
@@ -59,12 +48,11 @@ function makeTodo(todoObject) {
   textContainer.append(textTitle, textTimestamp);
 
   const container = document.createElement('div');
-  container.classList.add('item', 'shadow')
+  container.classList.add('item', 'shadow');
   container.append(textContainer);
   container.setAttribute('id', `todo-${id}`);
 
   if (isCompleted) {
-
     const undoButton = document.createElement('button');
     undoButton.classList.add('undo-button');
     undoButton.addEventListener('click', function () {
@@ -79,7 +67,6 @@ function makeTodo(todoObject) {
 
     container.append(undoButton, trashButton);
   } else {
-
     const checkButton = document.createElement('button');
     checkButton.classList.add('check-button');
     checkButton.addEventListener('click', function () {
@@ -96,13 +83,13 @@ function addTodo() {
   const timestamp = document.getElementById('date').value;
 
   const generatedID = generateId();
-  const todoObject = generateTodoObject(generatedID, textTodo, timestamp, false)
+  const todoObject = generateTodoObject(generatedID, textTodo, timestamp, false);
   todos.push(todoObject);
   document.dispatchEvent(new Event(RENDER_EVENT));
   saveData();
 }
 
-function addTaskToCompleted(todoId /* HTMLELement */) {
+function addTaskToCompleted(todoId) {
   const todoTarget = findTodo(todoId);
   if (todoTarget == null) return;
 
@@ -111,16 +98,33 @@ function addTaskToCompleted(todoId /* HTMLELement */) {
   saveData();
 }
 
-function removeTaskFromCompleted(todoId /* HTMLELement */) {
+function removeTaskFromCompleted(todoId) {
   const todoTarget = findTodoIndex(todoId);
   if (todoTarget === -1) return;
 
   todos.splice(todoTarget, 1);
   document.dispatchEvent(new Event(RENDER_EVENT));
   saveData();
+
+  Swal.fire({
+    title: 'Data Deleted!',
+    text: 'Your todo has been deleted successfully.',
+    icon: 'success',
+    confirmButtonText: 'OK'
+  });
+
+  Toastify({
+    text: "Data has been deleted!",
+    duration: 3000,
+    close: true,
+    gravity: "top",
+    position: "right",
+    backgroundColor: "#FF0000",
+    stopOnFocus: true
+  }).showToast();
 }
 
-function undoTaskFromCompleted(todoId /* HTMLELement */) {
+function undoTaskFromCompleted(todoId) {
   const todoTarget = findTodo(todoId);
   if (todoTarget == null) return;
 
@@ -129,21 +133,71 @@ function undoTaskFromCompleted(todoId /* HTMLELement */) {
   saveData();
 }
 
+function saveData() {
+  if (isStorageExist()) {
+    const parsed = JSON.stringify(todos);
+    localStorage.setItem(STORAGE_KEY, parsed);
+    document.dispatchEvent(new Event(SAVED_EVENT));
+  }
+}
+
+function isStorageExist() {
+  if (typeof (Storage) === undefined) {
+    alert('Browser kamu tidak mendukung local storage');
+    return false;
+  }
+  return true;
+}
+
+function loadDataFromStorage() {
+  const serializedData = localStorage.getItem(STORAGE_KEY);
+  let data = JSON.parse(serializedData);
+
+  if (data !== null) {
+    for (const todo of data) {
+      todos.push(todo);
+    }
+  }
+
+  document.dispatchEvent(new Event(RENDER_EVENT));
+}
+
+document.addEventListener(SAVED_EVENT, function () {
+  Swal.fire({
+    title: 'Data Saved!',
+    text: 'Your changes have been saved successfully.',
+    icon: 'success',
+    confirmButtonText: 'OK'
+  });
+
+  Toastify({
+    text: "Data has been saved!",
+    duration: 3000,
+    close: true,
+    gravity: "top",
+    position: "right",
+    backgroundColor: "#4CAF50",
+    stopOnFocus: true
+  }).showToast();
+});
+
 document.addEventListener('DOMContentLoaded', function () {
-  const submitForm /* HTMLFormElement */ = document.getElementById('form');
+  const submitForm = document.getElementById('form');
 
   submitForm.addEventListener('submit', function (event) {
     event.preventDefault();
     addTodo();
   });
-});
 
+  if (isStorageExist()) {
+    loadDataFromStorage();
+  }
+});
 
 document.addEventListener(RENDER_EVENT, function () {
   const uncompletedTODOList = document.getElementById('todos');
   const listCompleted = document.getElementById('completed-todos');
 
-  // clearing list item
   uncompletedTODOList.innerHTML = '';
   listCompleted.innerHTML = '';
 
@@ -155,24 +209,4 @@ document.addEventListener(RENDER_EVENT, function () {
       uncompletedTODOList.append(todoElement);
     }
   }
-});
-
-function saveData() {
-  if (isStorageExist()) {
-    const parsed = JSON.stringify(todos);
-    localStorage.setItem(STORAGE_KEY, parsed);
-    document.dispatchEvent(new Event(SAVED_EVENT));
-  }
-}
-
-function isStorageExist() /* boolean */ {
-  if (typeof (Storage) === undefined) {
-    alert('Browser kamu tidak mendukung local storage');
-    return false;
-  }
-  return true;
-}
-
-document.addEventListener(SAVED_EVENT, function () {
-  console.log(localStorage.getItem(STORAGE_KEY));
 });
